@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stats NF1</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; background: #f5f5f7; color: #1a1a1a; }
+.app { padding: 10px; max-width: 900px; margin: 0 auto; }
+
+/* HEADER */
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; background: #fff; border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.title { font-size: 15px; font-weight: 600; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
+.score-display { display: flex; align-items: center; gap: 8px; }
+.score-box { background: #f0f0f5; border-radius: 8px; padding: 4px 12px; font-size: 20px; font-weight: 700; min-width: 50px; text-align: center; border: 1px solid #e0e0e8; }
+.score-sep { font-size: 18px; color: #999; }
+.score-label { font-size: 11px; color: #888; }
+
+/* QT TABS */
+.qt-tabs { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+.qt-tab { padding: 7px 16px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 13px; font-weight: 500; color: #666; }
+.qt-tab.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+.undo-btn { margin-left: auto; display: flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 20px; border: 1px solid #f0a000; background: #fff8e1; color: #b36b00; cursor: pointer; font-size: 12px; font-weight: 500; }
+.undo-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* SECTION TABS */
+.section-tabs { display: flex; gap: 4px; margin-bottom: 10px; background: #fff; border-radius: 12px; padding: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.section-tab { flex: 1; padding: 8px 4px; border-radius: 8px; border: none; background: none; cursor: pointer; font-size: 13px; color: #666; font-weight: 500; text-align: center; }
+.section-tab.active { background: #1a73e8; color: #fff; }
+
+/* MSG BAR */
+.msg-bar { padding: 9px 12px; background: #f0f0f5; border-radius: 10px; font-size: 13px; color: #555; margin-bottom: 10px; min-height: 36px; display: flex; align-items: center; border: 1px solid #e8e8ee; }
+.msg-bar.ok { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+.msg-bar.warn { background: #fff8e1; color: #b36b00; border-color: #ffcc80; }
+
+/* CARDS */
+.card { background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+.card-title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+/* PLAYERS GRID */
+.players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 7px; }
+.player-btn { padding: 9px 6px; border-radius: 10px; border: 2px solid #e0e0e8; background: #fff; cursor: pointer; text-align: center; font-size: 12px; font-weight: 500; color: #333; transition: all 0.1s; }
+.player-btn.selected { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; }
+.player-btn .num { font-size: 10px; color: #aaa; display: block; margin-bottom: 2px; }
+.player-btn.selected .num { color: #6a9fe8; }
+
+/* ACTIONS GRID */
+.actions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 7px; }
+.action-btn { padding: 11px 8px; border-radius: 10px; border: 1.5px solid #e0e0e8; background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; text-align: center; color: #333; line-height: 1.3; transition: transform 0.08s; }
+.action-btn:active { transform: scale(0.95); }
+.action-btn.cat-score { border-color: #34a853; background: #f0faf3; color: #1e7e34; }
+.action-btn.cat-miss { border-color: #ea4335; background: #fef0ef; color: #c0392b; }
+.action-btn.cat-def { border-color: #1a73e8; background: #e8f0fe; color: #1558b0; }
+.action-btn.cat-neutral { border-color: #bbb; background: #f8f8f8; color: #555; }
+
+/* SYSTEMS */
+.sys-grid { display: flex; gap: 7px; flex-wrap: wrap; }
+.system-btn { padding: 7px 12px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; color: #444; }
+.system-btn.selected { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+.sysres-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.sysres-btn { padding: 10px 16px; border-radius: 10px; border: 1.5px solid; cursor: pointer; font-size: 13px; font-weight: 500; transition: transform 0.08s; }
+.sysres-btn:active { transform: scale(0.95); }
+.sysres-btn.score { background: #f0faf3; color: #1e7e34; border-color: #34a853; }
+.sysres-btn.faute { background: #fff8e1; color: #b36b00; border-color: #f0a000; }
+.sysres-btn.pdbal { background: #fef0ef; color: #c0392b; border-color: #ea4335; }
+.sysres-btn.touche { background: #f8f8f8; color: #555; border-color: #bbb; }
+
+/* TENDANCES */
+.tend-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.tend-btn { padding: 13px 8px; border-radius: 10px; border: 1.5px solid #e0e0e8; background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; text-align: center; line-height: 1.5; transition: transform 0.08s; }
+.tend-btn:active { transform: scale(0.95); }
+.tend-btn .ti { font-size: 20px; display: block; margin-bottom: 4px; }
+.tend-btn.cat-danger { border-color: #ea4335; background: #fef0ef; color: #c0392b; }
+.tend-btn.cat-warn { border-color: #f0a000; background: #fff8e1; color: #b36b00; }
+.tend-btn.cat-foul { border-color: #7c4dff; background: #f3eeff; color: #5c35cc; }
+
+/* RECAP */
+.qt-filter { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.qt-filter-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 12px; color: #666; font-weight: 500; }
+.qt-filter-btn.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+.recap-sub { font-size: 13px; font-weight: 600; margin: 14px 0 8px; color: #333; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; padding: 6px 7px; font-weight: 600; color: #888; border-bottom: 1px solid #eee; font-size: 11px; white-space: nowrap; background: #fafafa; }
+.tbl td { padding: 6px 7px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: #f9f9ff; }
+.pct { color: #aaa; font-size: 11px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.bg { background: #f0faf3; color: #1e7e34; }
+.br { background: #fef0ef; color: #c0392b; }
+.ba { background: #fff8e1; color: #b36b00; }
+.bgy { background: #f8f8f8; color: #555; border: 1px solid #e0e0e0; }
+.bbl { background: #e8f0fe; color: #1558b0; }
+
+/* EFF BAR */
+.eff-bar-wrap { height: 7px; background: #eee; border-radius: 4px; overflow: hidden; margin-top: 3px; }
+.eff-bar { height: 7px; border-radius: 4px; }
+.legend-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; padding: 8px 12px; background: #f8f8f8; border-radius: 8px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #666; }
+.ldot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* SECTION */
+.section { display: none; }
+.section.visible { display: block; }
+
+/* EXPORT */
+.export-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.export-btn { padding: 8px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; color: #333; display: flex; align-items: center; gap: 6px; }
+.export-btn.primary { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+
+/* TEND TABLE */
+.tend-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tend-tbl th { text-align: left; padding: 6px 8px; font-size: 11px; color: #888; border-bottom: 1px solid #eee; font-weight: 600; background: #fafafa; white-space: nowrap; }
+.tend-tbl td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; text-align: center; }
+.tend-tbl td:first-child { text-align: left; font-weight: 500; }
+
+/* Tabler icons CDN */
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title">🏀 Stats NF1</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="score-display">
+        <div>
+          <div class="score-label" style="text-align:center">Nous</div>
+          <div class="score-box" id="score-us">0</div>
+        </div>
+        <span class="score-sep">–</span>
+        <div>
+          <div class="score-label" style="text-align:center">Adv.</div>
+          <div class="score-box" id="score-them">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QT TABS -->
+  <div class="qt-tabs">
+    <button class="qt-tab active" onclick="setQt(1,this)">QT1</button>
+    <button class="qt-tab" onclick="setQt(2,this)">QT2</button>
+    <button class="qt-tab" onclick="setQt(3,this)">QT3</button>
+    <button class="qt-tab" onclick="setQt(4,this)">QT4</button>
+    <button class="qt-tab" onclick="setQt(5,this)">Prol.</button>
+    <button class="undo-btn" id="undo-btn" onclick="undoLast()" disabled>
+      <i class="ti ti-arrow-back-up"></i> Annuler
+    </button>
+  </div>
+
+  <!-- SECTION TABS -->
+  <div class="section-tabs">
+    <button class="section-tab active" onclick="setSection('joueuses',this)">Joueuses</button>
+    <button class="section-tab" onclick="setSection('systemes',this)">Systèmes</button>
+    <button class="section-tab" onclick="setSection('tendances',this)">Tendances</button>
+    <button class="section-tab" onclick="setSection('recap',this)">Récap</button>
+  </div>
+
+  <!-- MSG BAR -->
+  <div class="msg-bar" id="msg-bar">Sélectionne une joueuse puis une action.</div>
+
+  <!-- JOUEUSES -->
+  <div class="section visible" id="sec-joueuses">
+    <div class="card">
+      <div class="card-title">Joueuse</div>
+      <div class="players-grid" id="players-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Action</div>
+      <div class="actions-grid" id="actions-grid"></div>
+    </div>
+  </div>
+
+  <!-- SYSTEMES -->
+  <div class="section" id="sec-systemes">
+    <div class="card">
+      <div class="card-title">Système utilisé</div>
+      <div class="sys-grid" id="sys-btns"></div>
+      <div id="sys-result-section" style="display:none;">
+        <div style="font-size:12px;color:#888;margin:10px 0 6px;font-weight:600;">RÉSULTAT</div>
+        <div class="sysres-grid">
+          <button class="sysres-btn score" onclick="logSystem('Panier')"><i class="ti ti-circle-check"></i> Panier</button>
+          <button class="sysres-btn faute" onclick="logSystem('Faute provoquée')"><i class="ti ti-alert-triangle"></i> Faute provoquée</button>
+          <button class="sysres-btn pdbal" onclick="logSystem('Perte de balle')"><i class="ti ti-x"></i> Perte de balle</button>
+          <button class="sysres-btn touche" onclick="logSystem('Tir raté')"><i class="ti ti-circle-x"></i> Tir raté</button>
+          <button class="sysres-btn touche" onclick="logSystem('Touche')"><i class="ti ti-minus"></i> En touche</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TENDANCES -->
+  <div class="section" id="sec-tendances">
+    <div class="card">
+      <div class="card-title">QT en cours : <span id="tend-qt-label" style="color:#1a73e8">QT1</span></div>
+      <div class="tend-grid">
+        <button class="tend-btn cat-danger" onclick="logTendance('Balle perdue')">
+          <span class="ti ti-x" style="font-size:20px;display:block;margin-bottom:4px;"></span>Balle perdue
+        </button>
+        <button class="tend-btn" onclick="logTendance('Passe D concédée')">
+          <span class="ti ti-trending-up" style="font-size:20px;display:block;margin-bottom:4px;"></span>Passe D concédée
+        </button>
+        <button class="tend-btn cat-warn" onclick="logTendance('RO adverse — sans panier')">
+          <span class="ti ti-arrows-up" style="font-size:20px;display:block;margin-bottom:4px;"></span>RO adverse — sans panier
+        </button>
+        <button class="tend-btn cat-danger" onclick="logTendance('RO adverse + panier')">
+          <span class="ti ti-arrows-up" style="font-size:20px;display:block;margin-bottom:4px;"></span>RO adverse + panier
+        </button>
+        <button class="tend-btn cat-danger" onclick="logTendance('CA encaissée')">
+          <span class="ti ti-run" style="font-size:20px;display:block;margin-bottom:4px;"></span>CA encaissée
+        </button>
+        <button class="tend-btn cat-foul" onclick="logTendance('Faute notre équipe')">
+          <span class="ti ti-hand-stop" style="font-size:20px;display:block;margin-bottom:4px;"></span>Faute (notre équipe)
+        </button>
+        <button class="tend-btn cat-foul" onclick="logTendance('Faute adverse')">
+          <span class="ti ti-hand-stop" style="font-size:20px;display:block;margin-bottom:4px;"></span>Faute (adverse)
+        </button>
+        <button class="tend-btn" onclick="logScoreAdv(2)">
+          <span class="ti ti-plus" style="font-size:20px;display:block;margin-bottom:4px;"></span>Score adverse +2
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="tend-btn" style="flex:1;" onclick="logScoreAdv(3)"><i class="ti ti-circle-plus"></i> Score adverse +3</button>
+        <button class="tend-btn" style="flex:1;" onclick="adjustScore(-2)"><i class="ti ti-minus"></i> Corriger score −2</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECAP -->
+  <div class="section" id="sec-recap">
+    <div class="export-row">
+      <button class="export-btn primary" onclick="exportCSV()"><i class="ti ti-download"></i> Export CSV</button>
+      <button class="export-btn" onclick="resetMatch()" style="color:#c0392b;border-color:#ea4335;">
+        <i class="ti ti-trash"></i> Nouveau match
+      </button>
+    </div>
+    <div class="qt-filter">
+      <span style="font-size:12px;color:#888;align-self:center;">Filtrer :</span>
+      <button class="qt-filter-btn active" onclick="setRecapQt('all',this)">Total</button>
+      <button class="qt-filter-btn" onclick="setRecapQt(1,this)">QT1</button>
+      <button class="qt-filter-btn" onclick="setRecapQt(2,this)">QT2</button>
+      <button class="qt-filter-btn" onclick="setRecapQt(3,this)">QT3</button>
+      <button class="qt-filter-btn" onclick="setRecapQt(4,this)">QT4</button>
+      <button class="qt-filter-btn" onclick="setRecapQt(5,this)">Prol.</button>
+    </div>
+
+    <div class="recap-sub">Statistiques joueuses</div>
+    <div style="overflow-x:auto;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <table class="tbl">
+        <thead><tr>
+          <th>Joueuse</th><th>2pts</th><th>3pts</th><th>LF</th><th>Pts</th>
+          <th>RO</th><th>RD</th><th>PdB</th><th>Int.</th><th>PD</th><th>Fautes</th>
+        </tr></thead>
+        <tbody id="recap-body"></tbody>
+      </table>
+    </div>
+
+    <div class="recap-sub">Efficacité systèmes</div>
+    <div class="legend-row">
+      <span style="font-size:11px;color:#888;font-weight:600;">Pondération :</span>
+      <span class="legend-item"><span class="ldot" style="background:#34a853"></span>Panier = +1</span>
+      <span class="legend-item"><span class="ldot" style="background:#f0a000"></span>Faute = +1</span>
+      <span class="legend-item"><span class="ldot" style="background:#aaa"></span>Tir raté = +0,5</span>
+      <span class="legend-item"><span class="ldot" style="background:#ea4335"></span>PdB = −1</span>
+      <span class="legend-item"><span class="ldot" style="background:#ccc"></span>Touche = 0</span>
+    </div>
+    <div style="overflow-x:auto;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <table class="tbl">
+        <thead><tr>
+          <th>Système</th><th>Nb</th><th>Panier</th><th>Faute</th><th>PdB</th><th>Raté</th><th>Touche</th><th>Score pond.</th><th>Efficacité</th>
+        </tr></thead>
+        <tbody id="sys-recap-body"></tbody>
+      </table>
+    </div>
+
+    <div class="recap-sub">Tendances défensives par quart-temps</div>
+    <div style="overflow-x:auto;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <table class="tend-tbl" id="tend-tbl"></table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PLAYERS = [
+  {num:1,name:'Taylor'},{num:4,name:'Clémence'},{num:7,name:'Anaïs'},
+  {num:8,name:'Manon'},{num:11,name:'Sirine'},{num:12,name:'Amélie'},
+  {num:13,name:'Dimigua'},{num:27,name:'Juliette'},{num:40,name:'Flora'},
+  {num:93,name:'Minata'}
+];
+const SYSTEMS = ['Contre attaque','Transition','1','1 bas','1 côté','1 côté stagger',
+  '1 tourne long','2','2 côté','3','4','Blob','Slob','Tête','Short','Maillot','Spécial','Système TM'];
+const ACTIONS = [
+  {label:'2pts réussi',cat:'cat-score',key:'2m'},
+  {label:'2pts raté',cat:'cat-miss',key:'2r'},
+  {label:'3pts réussi',cat:'cat-score',key:'3m'},
+  {label:'3pts raté',cat:'cat-miss',key:'3r'},
+  {label:'LF réussi',cat:'cat-score',key:'lfm'},
+  {label:'LF raté',cat:'cat-miss',key:'lfr'},
+  {label:'Rebond offensif',cat:'cat-neutral',key:'ro'},
+  {label:'Rebond défensif',cat:'cat-def',key:'rd'},
+  {label:'Perte de balle',cat:'cat-miss',key:'pdb'},
+  {label:'Interception',cat:'cat-def',key:'int'},
+  {label:'Passe décisive',cat:'cat-score',key:'pd'},
+  {label:'Faute commise',cat:'cat-neutral',key:'fc'},
+];
+const TEND_KEYS = ['Balle perdue','Passe D concédée','RO adverse — sans panier','RO adverse + panier','CA encaissée','Faute notre équipe','Faute adverse'];
+const QT_LABELS = {1:'QT1',2:'QT2',3:'QT3',4:'QT4',5:'Prol.'};
+const STAT_KEYS = ['2m','2r','3m','3r','lfm','lfr','ro','rd','pdb','int','pd','fc'];
+
+let currentQt=1, recapQt='all', selectedPlayer=null, selectedSystem=null;
+let currentSection='joueuses';
+let history=[], scoreUs=0, scoreThem=0;
+
+function initStats() {
+  let s={};
+  PLAYERS.forEach(p=>{
+    s[p.name]={qt:{}};
+    [1,2,3,4,5].forEach(q=>{ s[p.name].qt[q]={}; STAT_KEYS.forEach(k=>s[p.name].qt[q][k]=0); });
+  });
+  return s;
+}
+function initSys() {
+  let s={};
+  SYSTEMS.forEach(sys=>{ s[sys]={Panier:0,'Faute provoquée':0,'Perte de balle':0,'Tir raté':0,'Touche':0,total:0}; });
+  return s;
+}
+function initTend() {
+  let t={};
+  [1,2,3,4,5].forEach(q=>{ t[q]={}; TEND_KEYS.forEach(k=>t[q][k]=0); });
+  return t;
+}
+
+let stats=initStats(), systemStats=initSys(), tendances=initTend();
+
+// localStorage persistence
+function saveState() {
+  try {
+    localStorage.setItem('nf1_stats', JSON.stringify({stats,systemStats,tendances,scoreUs,scoreThem,history}));
+  } catch(e){}
+}
+function loadState() {
+  try {
+    const raw=localStorage.getItem('nf1_stats');
+    if (!raw) return;
+    const d=JSON.parse(raw);
+    if (d.stats) stats=d.stats;
+    if (d.systemStats) systemStats=d.systemStats;
+    if (d.tendances) tendances=d.tendances;
+    if (d.scoreUs!==undefined) scoreUs=d.scoreUs;
+    if (d.scoreThem!==undefined) scoreThem=d.scoreThem;
+    if (d.history) history=d.history;
+  } catch(e){}
+}
+
+function buildPlayers() {
+  const g=document.getElementById('players-grid');
+  PLAYERS.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='player-btn'; b.id='pbtn-'+p.name;
+    b.innerHTML=`<span class="num">#${p.num}</span>${p.name}`;
+    b.onclick=()=>selectPlayer(p.name);
+    g.appendChild(b);
+  });
+}
+function buildActions() {
+  const g=document.getElementById('actions-grid');
+  ACTIONS.forEach(a=>{
+    const b=document.createElement('button');
+    b.className='action-btn '+a.cat; b.textContent=a.label;
+    b.onclick=()=>logAction(a.key,a.label);
+    g.appendChild(b);
+  });
+}
+function buildSystems() {
+  const g=document.getElementById('sys-btns');
+  SYSTEMS.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='system-btn'; b.id='sbtn-'+s; b.textContent=s;
+    b.onclick=()=>selectSystem(s);
+    g.appendChild(b);
+  });
+}
+
+function selectPlayer(name) {
+  selectedPlayer=name;
+  document.querySelectorAll('.player-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('pbtn-'+name).classList.add('selected');
+  setMsg('Joueuse : '+name+' — Choisis une action.','');
+}
+function logAction(key,label) {
+  if (!selectedPlayer) { setMsg('Sélectionne d\'abord une joueuse !','warn'); return; }
+  stats[selectedPlayer].qt[currentQt][key]++;
+  if (key==='2m') scoreUs+=2;
+  if (key==='3m') scoreUs+=3;
+  if (key==='lfm') scoreUs+=1;
+  updateScore();
+  history.push({type:'player',player:selectedPlayer,key,label,qt:currentQt});
+  document.getElementById('undo-btn').disabled=false;
+  setMsg('✓ '+selectedPlayer+' — '+label+' ('+QT_LABELS[currentQt]+')','ok');
+  saveState();
+  if (currentSection==='recap') updateRecap();
+}
+function selectSystem(s) {
+  selectedSystem=s;
+  document.querySelectorAll('.system-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('sbtn-'+s).classList.add('selected');
+  document.getElementById('sys-result-section').style.display='block';
+  setMsg('Système : '+s+' — Choisis le résultat.','');
+}
+function logSystem(result) {
+  if (!selectedSystem) return;
+  systemStats[selectedSystem][result]++;
+  systemStats[selectedSystem].total++;
+  history.push({type:'system',system:selectedSystem,result,qt:currentQt});
+  document.getElementById('undo-btn').disabled=false;
+  setMsg('✓ '+selectedSystem+' → '+result,'ok');
+  selectedSystem=null;
+  document.querySelectorAll('.system-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('sys-result-section').style.display='none';
+  saveState();
+  if (currentSection==='recap') updateRecap();
+}
+function logTendance(key) {
+  tendances[currentQt][key]++;
+  history.push({type:'tendance',key,qt:currentQt});
+  document.getElementById('undo-btn').disabled=false;
+  setMsg('✓ '+key+' ('+QT_LABELS[currentQt]+')','ok');
+  saveState();
+  if (currentSection==='recap') updateRecap();
+}
+function logScoreAdv(n) {
+  scoreThem+=n; updateScore();
+  history.push({type:'score',val:n});
+  document.getElementById('undo-btn').disabled=false;
+  saveState();
+}
+function adjustScore(n) { scoreThem=Math.max(0,scoreThem+n); updateScore(); saveState(); }
+function updateScore() {
+  document.getElementById('score-us').textContent=scoreUs;
+  document.getElementById('score-them').textContent=scoreThem;
+}
+function undoLast() {
+  if (!history.length) return;
+  const last=history.pop();
+  if (last.type==='player') {
+    stats[last.player].qt[last.qt][last.key]--;
+    if (last.key==='2m') scoreUs-=2;
+    if (last.key==='3m') scoreUs-=3;
+    if (last.key==='lfm') scoreUs-=1;
+    updateScore();
+    setMsg('Annulé : '+last.player+' — '+last.label,'warn');
+  } else if (last.type==='system') {
+    systemStats[last.system][last.result]--;
+    systemStats[last.system].total--;
+    setMsg('Annulé : '+last.system+' → '+last.result,'warn');
+  } else if (last.type==='tendance') {
+    tendances[last.qt][last.key]--;
+    setMsg('Annulé : '+last.key,'warn');
+  } else if (last.type==='score') {
+    scoreThem-=last.val; updateScore();
+  }
+  if (!history.length) document.getElementById('undo-btn').disabled=true;
+  saveState();
+  if (currentSection==='recap') updateRecap();
+}
+function setMsg(txt,type) {
+  const m=document.getElementById('msg-bar');
+  m.textContent=txt;
+  m.className='msg-bar'+(type?' '+type:'');
+}
+function setSection(name,el) {
+  currentSection=name;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('visible'));
+  document.querySelectorAll('.section-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('visible');
+  el.classList.add('active');
+  if (name==='recap') updateRecap();
+}
+function setQt(n,el) {
+  currentQt=n;
+  document.querySelectorAll('.qt-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const lbl=document.getElementById('tend-qt-label');
+  if (lbl) lbl.textContent=QT_LABELS[n];
+}
+function setRecapQt(q,el) {
+  recapQt=q;
+  document.querySelectorAll('.qt-filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateRecap();
+}
+function getStat(pname,key) {
+  if (recapQt==='all') { let s=0; [1,2,3,4,5].forEach(q=>s+=stats[pname].qt[q][key]); return s; }
+  return stats[pname].qt[recapQt][key]||0;
+}
+function pct(m,t) { return t>0?Math.round(m/t*100)+'%':'—'; }
+function computeEff(d) {
+  if (!d.total) return {score:0,pct:0};
+  const raw=d['Panier']*1+d['Faute provoquée']*1+d['Tir raté']*0.5+d['Perte de balle']*(-1);
+  const p=Math.round((raw/d.total)*100);
+  return {score:raw,pct:p};
+}
+
+function updateRecap() {
+  // Joueuses
+  const tbody=document.getElementById('recap-body');
+  tbody.innerHTML='';
+  PLAYERS.forEach(p=>{
+    const n=p.name;
+    const t2m=getStat(n,'2m'),t2r=getStat(n,'2r'),t3m=getStat(n,'3m'),t3r=getStat(n,'3r');
+    const lfm=getStat(n,'lfm'),lfr=getStat(n,'lfr'),ro=getStat(n,'ro'),rd=getStat(n,'rd');
+    const pdb=getStat(n,'pdb'),it=getStat(n,'int'),pd=getStat(n,'pd'),fc=getStat(n,'fc');
+    const pts=t2m*2+t3m*3+lfm;
+    if (!(pts||ro||rd||pdb||it||pd||t2m||t2r||t3m||t3r||lfm||lfr||fc)) return;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-weight:600">${n}</td>
+      <td>${t2m}/${t2m+t2r} <span class="pct">${pct(t2m,t2m+t2r)}</span></td>
+      <td>${t3m}/${t3m+t3r} <span class="pct">${pct(t3m,t3m+t3r)}</span></td>
+      <td>${lfm}/${lfm+lfr} <span class="pct">${pct(lfm,lfm+lfr)}</span></td>
+      <td><strong>${pts}</strong></td>
+      <td>${ro}</td><td>${rd}</td><td>${pdb}</td><td>${it}</td><td>${pd}</td>
+      <td>${fc>0?'<span class="badge bbl">'+fc+'</span>':0}</td>`;
+    tbody.appendChild(tr);
+  });
+  if (!tbody.children.length) tbody.innerHTML='<tr><td colspan="11" style="text-align:center;color:#aaa;padding:14px;">Aucune action saisie</td></tr>';
+
+  // Systèmes
+  const sbody=document.getElementById('sys-recap-body');
+  sbody.innerHTML='';
+  SYSTEMS.forEach(s=>{
+    const d=systemStats[s];
+    if (!d.total) return;
+    const {score,pct:ep}=computeEff(d);
+    const bc=ep>=60?'#34a853':ep>=30?'#f0a000':'#ea4335';
+    const sc=score>0?'#1e7e34':score<0?'#c0392b':'#555';
+    const sd=score%1===0?score.toFixed(0):score.toFixed(1);
+    const bw=Math.max(0,Math.min(100,ep));
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-weight:600">${s}</td>
+      <td>${d.total}</td>
+      <td><span class="badge bg">${d['Panier']}</span></td>
+      <td><span class="badge ba">${d['Faute provoquée']}</span></td>
+      <td><span class="badge br">${d['Perte de balle']}</span></td>
+      <td><span class="badge bgy">${d['Tir raté']}</span></td>
+      <td><span class="badge bgy">${d['Touche']}</span></td>
+      <td style="text-align:center;font-size:14px;font-weight:700;color:${sc}">${score>0?'+':''}${sd}</td>
+      <td style="min-width:90px;">
+        <div style="font-size:11px;font-weight:600;color:${bc}">${ep}%</div>
+        <div class="eff-bar-wrap"><div class="eff-bar" style="width:${bw}%;background:${bc}"></div></div>
+      </td>`;
+    sbody.appendChild(tr);
+  });
+  if (!sbody.children.length) sbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:#aaa;padding:14px;">Aucun système saisi</td></tr>';
+
+  // Tendances
+  const tbl=document.getElementById('tend-tbl');
+  let html=`<tr><th>Tendance</th>${[1,2,3,4,5].map(q=>`<th style="text-align:center">${QT_LABELS[q]}</th>`).join('')}<th style="text-align:center">Total</th></tr>`;
+  TEND_KEYS.forEach(k=>{
+    let total=0;
+    const isFoul=k.includes('Faute');
+    const isDanger=k.includes('panier')||k.includes('CA');
+    const bg=isFoul?'#f3eeff':isDanger?'#fef0ef':'';
+    const tc=isFoul?'#5c35cc':isDanger?'#c0392b':'#333';
+    let row=`<tr>`;
+    row+=`<td style="${bg?'background:'+bg+';':''}color:${tc};font-weight:600;">${k}</td>`;
+    [1,2,3,4,5].forEach(q=>{ const v=tendances[q][k]||0; total+=v; row+=`<td style="${bg?'background:'+bg+';':''}color:${tc};">${v||'—'}</td>`; });
+    row+=`<td style="${bg?'background:'+bg+';':''}color:${tc};font-weight:700;">${total}</td></tr>`;
+    html+=row;
+  });
+  tbl.innerHTML=html;
+}
+
+function resetMatch() {
+  if (!confirm('Effacer toutes les données du match en cours ?')) return;
+  stats=initStats(); systemStats=initSys(); tendances=initTend();
+  scoreUs=0; scoreThem=0; history=[];
+  updateScore();
+  document.getElementById('undo-btn').disabled=true;
+  selectedPlayer=null; selectedSystem=null;
+  document.querySelectorAll('.player-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.system-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('sys-result-section').style.display='none';
+  saveState();
+  setMsg('Nouveau match — données effacées.','warn');
+  updateRecap();
+}
+
+function exportCSV() {
+  const tot=k=>{ let s=0; [1,2,3,4,5].forEach(q=>s+=stats[arguments[0]].qt[q][k]); return s; };
+  let csv='Joueuse,2pts M,2pts T,%,3pts M,3pts T,%,LF M,LF T,%,Pts,RO,RD,PdB,Int,PD,Fautes\n';
+  PLAYERS.forEach(p=>{
+    const n=p.name;
+    const g=k=>{ let s=0;[1,2,3,4,5].forEach(q=>s+=stats[n].qt[q][k]);return s; };
+    const t2m=g('2m'),t2r=g('2r'),t3m=g('3m'),t3r=g('3r'),lfm=g('lfm'),lfr=g('lfr');
+    csv+=`${n},${t2m},${t2m+t2r},${pct(t2m,t2m+t2r)},${t3m},${t3m+t3r},${pct(t3m,t3m+t3r)},${lfm},${lfm+lfr},${pct(lfm,lfm+lfr)},${t2m*2+t3m*3+lfm},${g('ro')},${g('rd')},${g('pdb')},${g('int')},${g('pd')},${g('fc')}\n`;
+  });
+  csv+='\nSystème,Total,Panier,Faute,PdB,Raté,Touche,Score pondéré,Efficacité%\n';
+  SYSTEMS.forEach(s=>{ const d=systemStats[s]; if(!d.total) return; const {score,pct:ep}=computeEff(d); csv+=`${s},${d.total},${d['Panier']},${d['Faute provoquée']},${d['Perte de balle']},${d['Tir raté']},${d['Touche']},${score.toFixed(1)},${ep}%\n`; });
+  csv+='\nTendance,QT1,QT2,QT3,QT4,Prol.,Total\n';
+  TEND_KEYS.forEach(k=>{ let total=0,row=k; [1,2,3,4,5].forEach(q=>{ const v=tendances[q][k]||0;total+=v;row+=','+v; }); csv+=row+','+total+'\n'; });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='stats_match.csv'; a.click();
+}
+
+// Init
+loadState();
+buildPlayers();
+buildActions();
+buildSystems();
+updateScore();
+if (history.length) document.getElementById('undo-btn').disabled=false;
+</script>
+</body>
+</html>
