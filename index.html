@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stats NF1</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; background: #f5f5f7; color: #1a1a1a; }
+.app { padding: 10px; max-width: 900px; margin: 0 auto; }
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; background:#fff; border-radius:12px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.title { font-size:15px; font-weight:600; }
+.score-display { display:flex; align-items:center; gap:8px; }
+.score-box { background:#f0f0f5; border-radius:8px; padding:4px 12px; font-size:20px; font-weight:700; min-width:50px; text-align:center; border:1px solid #e0e0e8; }
+.score-sep { font-size:18px; color:#999; }
+.score-label { font-size:11px; color:#888; text-align:center; }
+.qt-tabs { display:flex; gap:6px; margin-bottom:10px; align-items:center; flex-wrap:wrap; }
+.qt-tab { padding:7px 16px; border-radius:20px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:13px; font-weight:500; color:#666; }
+.qt-tab.active { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.undo-btn { margin-left:auto; display:flex; align-items:center; gap:5px; padding:7px 12px; border-radius:20px; border:1px solid #f0a000; background:#fff8e1; color:#b36b00; cursor:pointer; font-size:12px; font-weight:500; }
+.undo-btn:disabled { opacity:.35; cursor:default; }
+.section-tabs { display:flex; gap:3px; margin-bottom:10px; background:#fff; border-radius:12px; padding:5px; box-shadow:0 1px 3px rgba(0,0,0,.06); overflow-x:auto; }
+.section-tab { flex:1; padding:8px 4px; border-radius:8px; border:none; background:none; cursor:pointer; font-size:12px; color:#666; font-weight:500; text-align:center; white-space:nowrap; min-width:0; }
+.section-tab.active { background:#1a73e8; color:#fff; }
+.msg-bar { padding:9px 12px; background:#f0f0f5; border-radius:10px; font-size:13px; color:#555; margin-bottom:10px; min-height:36px; display:flex; align-items:center; border:1px solid #e8e8ee; }
+.msg-bar.ok { background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7; }
+.msg-bar.warn { background:#fff8e1; color:#b36b00; border-color:#ffcc80; }
+.msg-bar.step { background:#e8f0fe; color:#1558b0; border-color:#aac4f6; }
+.card { background:#fff; border-radius:12px; padding:12px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+.card.inactive { opacity:.4; pointer-events:none; }
+.card.highlight { border:2px solid #1a73e8; }
+.card-title { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.6px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.step-badge { background:#1a73e8; color:#fff; border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+.step-badge.done { background:#34a853; }
+.step-badge.off { background:#ccc; }
+.players-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(95px,1fr)); gap:7px; }
+.player-btn { padding:9px 6px; border-radius:10px; border:2px solid #e0e0e8; background:#fff; cursor:pointer; text-align:center; font-size:12px; font-weight:500; color:#333; }
+.player-btn.selected { border-color:#1a73e8; background:#e8f0fe; color:#1a73e8; }
+.player-btn.selected-green { border-color:#34a853; background:#f0faf3; color:#1e7e34; }
+.player-btn .num { font-size:10px; color:#aaa; display:block; margin-bottom:2px; }
+.player-btn.selected .num { color:#6a9fe8; }
+.player-btn.selected-green .num { color:#6abf84; }
+.btn-grid { display:flex; gap:8px; flex-wrap:wrap; }
+.btn-grid.col2 { display:grid; grid-template-columns:1fr 1fr; }
+.btn-grid.col3 { display:grid; grid-template-columns:1fr 1fr 1fr; }
+.rbtn { padding:10px 14px; border-radius:10px; border:1.5px solid; cursor:pointer; font-size:13px; font-weight:500; text-align:center; line-height:1.4; }
+.rbtn:active { transform:scale(.95); }
+.rbtn.green  { background:#f0faf3; color:#1e7e34; border-color:#34a853; }
+.rbtn.orange { background:#fff8e1; color:#b36b00; border-color:#f0a000; }
+.rbtn.red    { background:#fef0ef; color:#c0392b; border-color:#ea4335; }
+.rbtn.gray   { background:#f8f8f8; color:#555;    border-color:#bbb; }
+.rbtn.blue   { background:#e8f0fe; color:#1558b0; border-color:#1a73e8; }
+.rbtn.purple { background:#f3eeff; color:#5c35cc; border-color:#7c4dff; }
+.sys-grid { display:flex; gap:7px; flex-wrap:wrap; }
+.sys-btn { padding:7px 12px; border-radius:20px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:12px; font-weight:500; color:#444; }
+.sys-btn.selected { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.sys-skip { padding:7px 14px; border-radius:20px; border:1.5px dashed #bbb; background:#f8f8f8; cursor:pointer; font-size:12px; color:#888; font-weight:500; }
+.sys-skip.active { border-color:#34a853; background:#f0faf3; color:#1e7e34; }
+.divider { height:1px; background:#f0f0f0; margin:10px 0; }
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; padding:16px; }
+.modal.visible { display:flex; }
+.modal-box { background:#fff; border-radius:16px; padding:16px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,.18); max-height:90vh; overflow-y:auto; }
+.modal-title { font-size:14px; font-weight:700; margin-bottom:12px; color:#1a1a1a; }
+.modal-sub { font-size:12px; color:#888; margin-bottom:8px; }
+.modal-cancel { width:100%; margin-top:10px; padding:9px; border-radius:20px; border:1px solid #ddd; background:#f8f8f8; cursor:pointer; font-size:13px; color:#888; }
+.tend-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.tend-btn { padding:12px 8px; border-radius:10px; border:1.5px solid #e0e0e8; background:#fff; cursor:pointer; font-size:12px; font-weight:500; text-align:center; line-height:1.5; }
+.tend-btn:active { transform:scale(.95); }
+.tend-btn.red    { border-color:#ea4335; background:#fef0ef; color:#c0392b; }
+.tend-btn.orange { border-color:#f0a000; background:#fff8e1; color:#b36b00; }
+.tend-btn.purple { border-color:#7c4dff; background:#f3eeff; color:#5c35cc; }
+.tend-btn.blue   { border-color:#1a73e8; background:#e8f0fe; color:#1558b0; }
+.tend-btn.green  { border-color:#34a853; background:#f0faf3; color:#1e7e34; }
+.qt-filter { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+.qt-filter-btn { padding:5px 12px; border-radius:20px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:12px; color:#666; font-weight:500; }
+.qt-filter-btn.active { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.recap-sub { font-size:13px; font-weight:700; margin:14px 0 8px; color:#333; }
+.tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.tbl th { text-align:left; padding:6px 7px; font-weight:600; color:#888; border-bottom:1px solid #eee; font-size:11px; white-space:nowrap; background:#fafafa; }
+.tbl td { padding:6px 7px; border-bottom:1px solid #f0f0f0; white-space:nowrap; }
+.tbl tr:last-child td { border-bottom:none; }
+.pct { color:#aaa; font-size:11px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+.b-green  { background:#f0faf3; color:#1e7e34; }
+.b-red    { background:#fef0ef; color:#c0392b; }
+.b-orange { background:#fff8e1; color:#b36b00; }
+.b-gray   { background:#f8f8f8; color:#555; border:1px solid #e0e0e0; }
+.b-blue   { background:#e8f0fe; color:#1558b0; }
+.b-purple { background:#f3eeff; color:#5c35cc; }
+.eff-bar-wrap { height:7px; background:#eee; border-radius:4px; overflow:hidden; margin-top:3px; }
+.eff-bar { height:7px; border-radius:4px; }
+.legend-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; padding:8px 12px; background:#f8f8f8; border-radius:8px; }
+.legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#666; }
+.ldot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.export-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.export-btn { padding:8px 14px; border-radius:20px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:12px; font-weight:500; color:#333; display:flex; align-items:center; gap:6px; }
+.export-btn.primary { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.tend-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.tend-tbl th { text-align:left; padding:6px 8px; font-size:11px; color:#888; border-bottom:1px solid #eee; font-weight:600; background:#fafafa; white-space:nowrap; }
+.tend-tbl td { padding:6px 8px; border-bottom:1px solid #f0f0f0; text-align:center; }
+.tend-tbl td:first-child { text-align:left; font-weight:500; }
+.section { display:none; }
+.section.visible { display:block; }
+.settings-warning { background:#fff8e1; border:1px solid #ffcc80; border-radius:10px; padding:10px 12px; font-size:12px; color:#b36b00; margin-bottom:14px; }
+.settings-section { margin-bottom:20px; }
+.settings-label { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.6px; margin-bottom:10px; }
+.settings-list { display:flex; flex-direction:column; gap:7px; }
+.settings-row { display:flex; align-items:center; gap:8px; }
+.settings-input { flex:1; padding:9px 12px; border-radius:8px; border:1px solid #ddd; font-size:13px; background:#fafafa; color:#1a1a1a; outline:none; font-family:inherit; }
+.settings-input:focus { border-color:#1a73e8; background:#fff; }
+.settings-num { width:56px; padding:9px 8px; border-radius:8px; border:1px solid #ddd; font-size:13px; background:#fafafa; color:#888; text-align:center; outline:none; font-family:inherit; }
+.settings-num:focus { border-color:#1a73e8; background:#fff; color:#1a1a1a; }
+.del-btn { width:34px; height:34px; border-radius:8px; border:1px solid #ffcdd2; background:#fef0ef; color:#c0392b; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.add-btn { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:20px; border:1.5px dashed #1a73e8; background:#e8f0fe; color:#1a73e8; cursor:pointer; font-size:12px; font-weight:600; margin-top:8px; width:fit-content; }
+.save-btn { display:flex; align-items:center; gap:8px; padding:12px 24px; border-radius:20px; border:none; background:#1a73e8; color:#fff; cursor:pointer; font-size:14px; font-weight:600; margin-top:6px; }
+.sec-title { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div class="title">🏀 Stats NF1</div>
+  <div class="score-display">
+    <div><div class="score-label">Nous</div><div class="score-box" id="score-us">0</div></div>
+    <span class="score-sep">–</span>
+    <div><div class="score-label">Adv.</div><div class="score-box" id="score-them">0</div></div>
+  </div>
+</div>
+
+<div class="qt-tabs">
+  <button class="qt-tab active" onclick="setQt(1,this)">QT1</button>
+  <button class="qt-tab" onclick="setQt(2,this)">QT2</button>
+  <button class="qt-tab" onclick="setQt(3,this)">QT3</button>
+  <button class="qt-tab" onclick="setQt(4,this)">QT4</button>
+  <button class="qt-tab" onclick="setQt(5,this)">Prol.</button>
+  <button class="undo-btn" id="undo-btn" onclick="undoLast()" disabled>↩ Annuler</button>
+</div>
+
+<div class="section-tabs" id="section-tabs">
+  <button class="section-tab active" onclick="setSection('action',this)">Action</button>
+  <button class="section-tab" onclick="setSection('tendances',this)">Tendances</button>
+  <button class="section-tab" onclick="setSection('recap',this)">Récap</button>
+  <button class="section-tab" onclick="setSection('settings',this)">⚙️ Config</button>
+</div>
+
+<div class="msg-bar step" id="msg-bar">① Sélectionne la joueuse tireuse / auteure de l'action</div>
+
+<!-- ACTION -->
+<div class="section visible" id="sec-action">
+
+  <div class="card highlight" id="card-player">
+    <div class="card-title"><span class="step-badge" id="badge-player">1</span>Joueuse — tireuse / auteure de l'action</div>
+    <div class="players-grid" id="players-grid"></div>
+  </div>
+
+  <div class="card inactive" id="card-result">
+    <div class="card-title"><span class="step-badge off" id="badge-result">2</span>Résultat de l'action</div>
+    <div class="sec-title">Panier réussi</div>
+    <div class="btn-grid col3" style="margin-bottom:12px;">
+      <button class="rbtn green" onclick="logResult('LF réussi','lfm')">🎯 LF réussi</button>
+      <button class="rbtn green" onclick="logResult('2pts réussi','2m')">✓ 2 pts</button>
+      <button class="rbtn green" onclick="logResult('3pts réussi','3m')">✓ 3 pts</button>
+    </div>
+    <div class="sec-title">Tir manqué</div>
+    <div class="btn-grid col3" style="margin-bottom:12px;">
+      <button class="rbtn red" onclick="logResult('LF raté','lfr')">✕ LF raté</button>
+      <button class="rbtn red" onclick="logResult('2pts raté','2r')">✕ 2pts raté</button>
+      <button class="rbtn red" onclick="logResult('3pts raté','3r')">✕ 3pts raté</button>
+    </div>
+    <div class="sec-title">Autres actions</div>
+    <div class="btn-grid">
+      <button class="rbtn orange" onclick="logResult('Faute provoquée','fp')">⚠ Faute provoquée</button>
+      <button class="rbtn gray"   onclick="logResult('Perte de balle','pdb')">✕ Perte de balle</button>
+      <button class="rbtn blue"   onclick="logResult('Rebond offensif','ro')">↑ Rebond offensif</button>
+      <button class="rbtn blue"   onclick="logResult('Rebond défensif','rd')">↓ Rebond défensif</button>
+      <button class="rbtn blue"   onclick="logResult('Interception','int')">⚡ Interception</button>
+      <button class="rbtn purple" onclick="logResult('Faute offensive','fo')">🔴 Faute offensive</button>
+      <button class="rbtn purple" onclick="logResult('Faute défensive','fd')">🛡 Faute défensive</button>
+    </div>
+
+    <!-- Sous-question : contrée ? (visible uniquement après 2pts raté / 3pts raté) -->
+    <div id="contre-question" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;">
+      <div class="sec-title">Le tir a-t-il été contré ?</div>
+      <div class="btn-grid col2">
+        <button class="rbtn red"  onclick="answerContre(true)">✋ Oui, contrée</button>
+        <button class="rbtn gray" onclick="answerContre(false)">Non</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card inactive" id="card-sys">
+    <div class="card-title"><span class="step-badge off" id="badge-sys">3</span>Système de jeu <span style="font-weight:400;font-size:11px;color:#aaa;text-transform:none;letter-spacing:0;">(optionnel)</span></div>
+    <div class="sys-grid" id="sys-btns" style="margin-bottom:10px;"></div>
+    <button class="sys-skip" id="sys-skip-btn" onclick="skipSystem()">→ Pas de système / passer</button>
+  </div>
+
+  <div class="card inactive" id="card-passe">
+    <div class="card-title"><span class="step-badge off" id="badge-passe">4</span>Passe décisive ? <span style="font-weight:400;font-size:11px;color:#aaa;text-transform:none;letter-spacing:0;">(optionnel)</span></div>
+    <div class="players-grid" id="passe-grid"></div>
+    <button class="sys-skip" style="margin-top:10px;" onclick="skipPasse()">→ Pas de passe décisive</button>
+  </div>
+
+</div>
+
+<!-- TENDANCES -->
+<div class="section" id="sec-tendances">
+  <div class="card">
+    <div class="card-title">QT en cours : <span id="tend-qt-label" style="color:#1a73e8;font-size:13px;text-transform:none;letter-spacing:0;">QT1</span></div>
+
+    <div class="sec-title">Actions par joueuse</div>
+    <div class="tend-grid" style="margin-bottom:12px;">
+      <button class="tend-btn green" onclick="openPlayerModal('int','Interception','⚡')">⚡<br>Interception</button>
+      <button class="tend-btn blue"  onclick="openPlayerModal('ro','Rebond offensif','↑')">↑<br>Rebond offensif</button>
+      <button class="tend-btn blue"  onclick="openPlayerModal('rd','Rebond défensif','↓')">↓<br>Rebond défensif</button>
+      <button class="tend-btn blue"  onclick="openPlayerModal('ctr','Contre réalisé','✋')">✋<br>Contre réalisé</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sec-title" style="margin-top:10px;">Événements adverses</div>
+    <div class="tend-grid" style="margin-bottom:12px;">
+      <button class="tend-btn orange" onclick="logTendance('RO adverse — sans panier')">↑↑<br>RO adverse — sans panier</button>
+      <button class="tend-btn red"    onclick="logTendance('RO adverse + panier')">↑↑<br>RO adverse + panier</button>
+      <button class="tend-btn red"    onclick="logTendance('CA encaissée')">▶▶<br>CA encaissée</button>
+      <button class="tend-btn purple" onclick="logTendance('Faute adverse')">✋<br>Faute adverse</button>
+      <button class="tend-btn red"    onclick="openPanierAdverseModal()">🔴<br>Panier adverse</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sec-title" style="margin-top:10px;">Score adversaire</div>
+    <div class="btn-grid" style="margin-bottom:12px;">
+      <button class="rbtn red" onclick="adjScoreThem(1)">+1 Adv.</button>
+      <button class="rbtn red" onclick="adjScoreThem(2)">+2 Adv.</button>
+      <button class="rbtn red" onclick="adjScoreThem(3)">+3 Adv.</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sec-title" style="margin-top:10px;">Corrections score</div>
+    <div class="btn-grid col2">
+      <button class="rbtn green" onclick="adjScoreUs(1)">+ 1 pt (Nous)</button>
+      <button class="rbtn green" onclick="adjScoreUs(2)">+ 2 pts (Nous)</button>
+      <button class="rbtn gray"  onclick="adjScoreUs(-1)">− 1 pt (Nous)</button>
+      <button class="rbtn gray"  onclick="adjScoreUs(-2)">− 2 pts (Nous)</button>
+      <button class="rbtn gray"  onclick="adjScoreUs(-3)">− 3 pts (Nous)</button>
+      <button class="rbtn gray"  onclick="adjScoreThem(-1)">− 1 pt (Adv.)</button>
+      <button class="rbtn gray"  onclick="adjScoreThem(-2)">− 2 pts (Adv.)</button>
+      <button class="rbtn gray"  onclick="adjScoreThem(-3)">− 3 pts (Adv.)</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECAP -->
+<div class="section" id="sec-recap">
+  <div class="export-row">
+    <button class="export-btn primary" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="export-btn" onclick="resetMatch()" style="color:#c0392b;border-color:#ea4335;">🗑 Nouveau match</button>
+  </div>
+  <div class="qt-filter">
+    <span style="font-size:12px;color:#888;align-self:center;">Filtrer :</span>
+    <button class="qt-filter-btn active" onclick="setRecapQt('all',this)">Total</button>
+    <button class="qt-filter-btn" onclick="setRecapQt(1,this)">QT1</button>
+    <button class="qt-filter-btn" onclick="setRecapQt(2,this)">QT2</button>
+    <button class="qt-filter-btn" onclick="setRecapQt(3,this)">QT3</button>
+    <button class="qt-filter-btn" onclick="setRecapQt(4,this)">QT4</button>
+    <button class="qt-filter-btn" onclick="setRecapQt(5,this)">Prol.</button>
+  </div>
+
+  <div class="recap-sub">Statistiques joueuses</div>
+  <div style="overflow-x:auto;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+    <table class="tbl"><thead><tr>
+      <th>Joueuse</th><th>LF</th><th>2pts</th><th>3pts</th><th>Pts</th>
+      <th>RO</th><th>RD</th><th>Ctres réal.</th><th>Contrée</th><th>Int.</th><th>PD</th><th>PdB</th><th>F.Off.</th><th>F.Déf.</th>
+    </tr></thead><tbody id="recap-body"></tbody></table>
+  </div>
+
+  <div class="recap-sub">Efficacité systèmes</div>
+  <div class="legend-row">
+    <span style="font-size:11px;color:#888;font-weight:600;">Pondération :</span>
+    <span class="legend-item"><span class="ldot" style="background:#34a853"></span>Panier = +1</span>
+    <span class="legend-item"><span class="ldot" style="background:#f0a000"></span>Faute = +0,75</span>
+    <span class="legend-item"><span class="ldot" style="background:#aaa"></span>Tir raté = +0,5</span>
+    <span class="legend-item"><span class="ldot" style="background:#ea4335"></span>PdB = −1</span>
+    <span class="legend-item"><span class="ldot" style="background:#ccc"></span>Touche = 0</span>
+  </div>
+  <div style="overflow-x:auto;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+    <table class="tbl"><thead><tr>
+      <th>Système</th><th>Nb</th><th>Panier</th><th>Faute</th><th>PdB</th><th>Raté</th><th>Touche</th><th>Score pond.</th><th>Efficacité</th>
+    </tr></thead><tbody id="sys-recap-body"></tbody></table>
+  </div>
+
+  <div class="recap-sub">Tendances défensives par quart-temps</div>
+  <div style="overflow-x:auto;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+    <table class="tend-tbl" id="tend-tbl"></table>
+  </div>
+
+  <div class="recap-sub">Paniers adverses — type et valeur</div>
+  <div style="overflow-x:auto;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+    <table class="tbl"><thead><tr>
+      <th>Type</th><th>LF (1pt)</th><th>2pts</th><th>3pts</th><th>Total</th><th>Pts encaissés</th>
+    </tr></thead><tbody id="panier-adv-body"></tbody></table>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="section" id="sec-settings">
+  <div class="card">
+    <div class="settings-warning">⚠️ Enregistrer la configuration réinitialise les données du match en cours.</div>
+    <div class="settings-section">
+      <div class="settings-label">Joueuses</div>
+      <div class="settings-list" id="settings-players"></div>
+      <button class="add-btn" onclick="addPlayerRow()">+ Ajouter une joueuse</button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">Systèmes de jeu</div>
+      <div class="settings-list" id="settings-systems"></div>
+      <button class="add-btn" onclick="addSystemRow()">+ Ajouter un système</button>
+    </div>
+    <button class="save-btn" onclick="saveSettings()">💾 Enregistrer</button>
+  </div>
+</div>
+
+<!-- MODAL : joueuse pour tendance -->
+<div class="modal" id="modal-player">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-player-title">Quelle joueuse ?</div>
+    <div class="players-grid" id="modal-players-grid"></div>
+    <button class="modal-cancel" onclick="closeModal('modal-player')">Annuler</button>
+  </div>
+</div>
+
+<!-- MODAL : panier adverse -->
+<div class="modal" id="modal-panier-adv">
+  <div class="modal-box">
+    <div class="modal-title">🔴 Panier adverse — détail</div>
+    <div class="modal-sub">Type :</div>
+    <div class="btn-grid col2" style="margin-bottom:14px;" id="panier-type-btns"></div>
+    <div class="modal-sub">Valeur :</div>
+    <div class="btn-grid col3" style="margin-bottom:6px;" id="panier-val-btns">
+      <button class="rbtn red" onclick="setPanierVal(1)">1 pt (LF)</button>
+      <button class="rbtn red" onclick="setPanierVal(2)">2 pts</button>
+      <button class="rbtn red" onclick="setPanierVal(3)">3 pts</button>
+    </div>
+    <div id="panier-val-display" style="font-size:12px;color:#888;margin-bottom:12px;min-height:18px;"></div>
+    <button class="rbtn green" onclick="confirmPanierAdv()" id="panier-confirm-btn" style="width:100%;margin-bottom:8px;" disabled>✓ Confirmer</button>
+    <button class="modal-cancel" onclick="closeModal('modal-panier-adv')">Annuler</button>
+  </div>
+</div>
+
+</div>
+<script>
+const DEFAULT_PLAYERS=[{num:4,name:'Clémence'},{num:5,name:'Zahra'},{num:7,name:'Anaïs'},{num:8,name:'Manon'},{num:10,name:'Katia'},{num:12,name:'Amélie'},{num:16,name:'Pauline'},{num:40,name:'Flora'},{num:66,name:'Lana'},{num:93,name:'Minata'},{num:33,name:'Amandine'},{num:51,name:'Mae'}];
+const DEFAULT_SYSTEMS=['Contre attaque','Transition','1','1 bas','1 côté','1 côté stagger','1 tourne long','2','2 côté','3','4','Blob','Slob','Tête','Short','Maillot','Spécial','Système TM'];
+const PANIER_TYPES=['Backdoor','Pick & Roll','Post Up','Handoff','Autre'];
+const QT_LABELS={1:'QT1',2:'QT2',3:'QT3',4:'QT4',5:'Prol.'};
+const STAT_KEYS=['lfm','lfr','2m','2r','3m','3r','fp','pdb','ro','rd','int','pd','fo','fd','ctr','ctrSubi'];
+const TEND_KEYS=['RO adverse — sans panier','RO adverse + panier','CA encaissée','Faute adverse'];
+
+let PLAYERS=[],SYSTEMS=[];
+let currentQt=1,recapQt='all',currentSection='action';
+let history=[],scoreUs=0,scoreThem=0;
+let stats={},systemStats={},tendances={},panierAdvStats={};
+let flow={player:null,resultKey:null,resultLabel:null,sys:null};
+let panierAdvCtx={type:null,val:null};
+
+function initStats(){let s={};PLAYERS.forEach(p=>{s[p.name]={qt:{}};[1,2,3,4,5].forEach(q=>{s[p.name].qt[q]={};STAT_KEYS.forEach(k=>s[p.name].qt[q][k]=0);});});return s;}
+function initSys(){let s={};SYSTEMS.forEach(sys=>{s[sys]={Panier:0,'Faute provoquée':0,'Perte de balle':0,'Tir raté':0,'Touche':0,total:0};});return s;}
+function initTend(){let t={};[1,2,3,4,5].forEach(q=>{t[q]={};TEND_KEYS.forEach(k=>t[q][k]=0);});return t;}
+function initPanierAdv(){let p={};PANIER_TYPES.forEach(t=>{p[t]={'1pt':{},'2pts':{},'3pts':{}};[1,2,3,4,5].forEach(q=>{p[t]['1pt'][q]=0;p[t]['2pts'][q]=0;p[t]['3pts'][q]=0;});});return p;}
+
+function saveState(){try{localStorage.setItem('nf1_v6',JSON.stringify({stats,systemStats,tendances,panierAdvStats,scoreUs,scoreThem,history,PLAYERS,SYSTEMS}));}catch(e){}}
+function loadState(){
+  try{
+    const raw=localStorage.getItem('nf1_v6');
+    if(!raw){PLAYERS=[...DEFAULT_PLAYERS];SYSTEMS=[...DEFAULT_SYSTEMS];return;}
+    const d=JSON.parse(raw);
+    PLAYERS=d.PLAYERS&&d.PLAYERS.length?d.PLAYERS:[...DEFAULT_PLAYERS];
+    SYSTEMS=d.SYSTEMS&&d.SYSTEMS.length?d.SYSTEMS:[...DEFAULT_SYSTEMS];
+    if(d.stats)stats=d.stats;if(d.systemStats)systemStats=d.systemStats;
+    if(d.tendances)tendances=d.tendances;if(d.panierAdvStats)panierAdvStats=d.panierAdvStats;
+    if(d.scoreUs!==undefined)scoreUs=d.scoreUs;if(d.scoreThem!==undefined)scoreThem=d.scoreThem;
+    if(d.history)history=d.history;
+  }catch(e){PLAYERS=[...DEFAULT_PLAYERS];SYSTEMS=[...DEFAULT_SYSTEMS];}
+}
+
+function buildPlayerGrid(id,clickFn){
+  const g=document.getElementById(id);g.innerHTML='';
+  PLAYERS.forEach(p=>{
+    const b=document.createElement('button');b.className='player-btn';b.dataset.name=p.name;
+    b.innerHTML=`<span class="num">#${p.num}</span>${p.name}`;b.onclick=()=>clickFn(p.name);g.appendChild(b);
+  });
+}
+function buildSystems(){
+  const g=document.getElementById('sys-btns');g.innerHTML='';
+  SYSTEMS.forEach(s=>{
+    const b=document.createElement('button');b.className='sys-btn';b.dataset.sys=s;b.textContent=s;
+    b.onclick=()=>selectSystem(s);g.appendChild(b);
+  });
+}
+function highlightGrid(gridId,name,cls){
+  document.querySelectorAll('#'+gridId+' .player-btn').forEach(b=>{
+    b.classList.remove('selected','selected-green');
+    if(b.dataset.name===name)b.classList.add(cls||'selected');
+  });
+}
+function setCardState(id,state){
+  const c=document.getElementById(id);const badge=c.querySelector('.step-badge');
+  c.classList.remove('inactive','highlight');
+  if(state==='inactive'){c.classList.add('inactive');if(badge)badge.className='step-badge off';}
+  else if(state==='active'){c.classList.add('highlight');if(badge)badge.className='step-badge';}
+  else if(state==='done'){if(badge){badge.className='step-badge done';badge.textContent='✓';}}
+}
+
+function selectPlayer(name){
+  flow.player=name;
+  highlightGrid('players-grid',name,'selected');
+  setCardState('card-player','done');
+  setCardState('card-result','active');
+  setCardState('card-sys','inactive');
+  setCardState('card-passe','inactive');
+  document.getElementById('badge-result').textContent='2';
+  document.getElementById('badge-sys').textContent='3';
+  document.getElementById('badge-passe').textContent='4';
+  setMsg(`① ${name} — ② Résultat de l'action`,'step');
+  document.getElementById('card-result').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function getResultSysKey(key){
+  if(key==='2m'||key==='3m'||key==='lfm') return 'Panier';
+  if(key==='fp') return 'Faute provoquée';
+  if(key==='pdb') return 'Perte de balle';
+  if(key==='2r'||key==='3r'||key==='lfr') return 'Tir raté';
+  return 'Touche';
+}
+
+function logResult(label,key){
+  if(!flow.player){setMsg('Sélectionne d\'abord une joueuse','warn');return;}
+  flow.resultKey=key;flow.resultLabel=label;
+  if(stats[flow.player]&&stats[flow.player].qt[currentQt][key]!==undefined)
+    stats[flow.player].qt[currentQt][key]++;
+  if(key==='2m')scoreUs+=2;if(key==='3m')scoreUs+=3;if(key==='lfm')scoreUs+=1;
+  updateScore();
+  history.push({type:'action',player:flow.player,key,label,qt:currentQt,sys:null,passe:null,contre:false});
+  document.getElementById('undo-btn').disabled=false;
+
+  // Sous-question "contrée ?" uniquement pour 2pts raté / 3pts raté
+  const askContre = (key==='2r'||key==='3r');
+  if(askContre){
+    document.getElementById('contre-question').style.display='block';
+    setCardState('card-result','active'); // reste actif tant que la question n'est pas répondue
+    setMsg(`${flow.player} — ${label} — le tir a-t-il été contré ?`,'step');
+    document.getElementById('contre-question').scrollIntoView({behavior:'smooth',block:'nearest'});
+    if(currentSection==='recap')updateRecap();
+    return; // on attend la réponse avant de passer à l'étape système
+  }
+
+  proceedAfterResult();
+}
+
+function answerContre(wasContre){
+  document.getElementById('contre-question').style.display='none';
+  if(wasContre){
+    stats[flow.player].qt[currentQt]['ctrSubi']++;
+    const last=history[history.length-1];if(last)last.contre=true;
+    setMsg(`✓ ${flow.resultLabel} contrée — ${flow.player}`,'ok');
+  }
+  proceedAfterResult();
+}
+
+function proceedAfterResult(){
+  setCardState('card-result','done');
+  setCardState('card-sys','active');
+  document.getElementById('sys-skip-btn').classList.remove('active');
+  document.querySelectorAll('.sys-btn').forEach(b=>b.classList.remove('selected'));
+  setCardState('card-passe','inactive');
+  setMsg(`✓ ${flow.resultLabel} — ${flow.player} — ③ Système ? (optionnel)`,'step');
+  document.getElementById('card-sys').scrollIntoView({behavior:'smooth',block:'nearest'});
+  if(currentSection==='recap')updateRecap();
+  saveState();
+}
+
+function selectSystem(s){
+  flow.sys=s;
+  document.querySelectorAll('.sys-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelector(`.sys-btn[data-sys="${s}"]`).classList.add('selected');
+  document.getElementById('sys-skip-btn').classList.remove('active');
+  const sk=getResultSysKey(flow.resultKey);
+  systemStats[s][sk]++;systemStats[s].total++;
+  const last=history[history.length-1];if(last)last.sys=s;
+  setCardState('card-sys','done');
+  const isBasket=(flow.resultKey==='2m'||flow.resultKey==='3m'||flow.resultKey==='lfm');
+  if(isBasket){
+    setCardState('card-passe','active');
+    setMsg(`③ ${s} — ④ Passe décisive ?`,'step');
+    document.getElementById('card-passe').scrollIntoView({behavior:'smooth',block:'nearest'});
+  } else {
+    setMsg(`✓ ${flow.resultLabel} / ${flow.player} / ${s}`,'ok');
+    saveState();setTimeout(()=>resetFlow(),1200);
+  }
+  if(currentSection==='recap')updateRecap();
+}
+
+function skipSystem(){
+  flow.sys=null;
+  document.querySelectorAll('.sys-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('sys-skip-btn').classList.add('active');
+  setCardState('card-sys','done');document.getElementById('badge-sys').textContent='✓';
+  const isBasket=(flow.resultKey==='2m'||flow.resultKey==='3m'||flow.resultKey==='lfm');
+  if(isBasket){
+    setCardState('card-passe','active');
+    setMsg('③ Sans système — ④ Passe décisive ?','step');
+    document.getElementById('card-passe').scrollIntoView({behavior:'smooth',block:'nearest'});
+  } else {
+    setMsg(`✓ ${flow.resultLabel} — ${flow.player}`,'ok');
+    saveState();setTimeout(()=>resetFlow(),1200);
+  }
+}
+
+function selectPasse(name){
+  if(!flow.player)return;
+  stats[name].qt[currentQt]['pd']++;
+  highlightGrid('passe-grid',name,'selected-green');
+  const last=history[history.length-1];if(last)last.passe=name;
+  saveState();setMsg(`✓ Panier de ${flow.player} — Passe de ${name}`,'ok');
+  setTimeout(()=>resetFlow(),1200);if(currentSection==='recap')updateRecap();
+}
+function skipPasse(){saveState();setMsg(`✓ ${flow.resultLabel} de ${flow.player} — sans passe décisive`,'ok');setTimeout(()=>resetFlow(),1000);}
+
+function resetFlow(){
+  flow={player:null,resultKey:null,resultLabel:null,sys:null};
+  document.querySelectorAll('#players-grid .player-btn,#passe-grid .player-btn').forEach(b=>b.classList.remove('selected','selected-green'));
+  document.querySelectorAll('.sys-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('sys-skip-btn').classList.remove('active');
+  document.getElementById('contre-question').style.display='none';
+  setCardState('card-player','active');setCardState('card-result','inactive');
+  setCardState('card-sys','inactive');setCardState('card-passe','inactive');
+  document.getElementById('badge-result').textContent='2';
+  document.getElementById('badge-sys').textContent='3';
+  document.getElementById('badge-passe').textContent='4';
+  setMsg('① Sélectionne la joueuse tireuse / auteure de l\'action','step');
+}
+
+function undoLast(){
+  if(!history.length)return;
+  const last=history.pop();
+  if(last.type==='action'){
+    if(stats[last.player]&&stats[last.player].qt[last.qt]){
+      stats[last.player].qt[last.qt][last.key]--;
+      if(last.contre)stats[last.player].qt[last.qt]['ctrSubi']--;
+      if(last.key==='2m')scoreUs-=2;if(last.key==='3m')scoreUs-=3;if(last.key==='lfm')scoreUs-=1;
+    }
+    if(last.passe&&stats[last.passe])stats[last.passe].qt[last.qt]['pd']--;
+    if(last.sys&&systemStats[last.sys]){
+      const sk=getResultSysKey(last.key);systemStats[last.sys][sk]--;systemStats[last.sys].total--;
+    }
+    updateScore();setMsg(`Annulé : ${last.label} / ${last.player}`,'warn');
+  } else if(last.type==='tend'){
+    tendances[last.qt][last.key]--;setMsg(`Annulé : ${last.key}`,'warn');
+  } else if(last.type==='tend_player'){
+    stats[last.player].qt[last.qt][last.key]--;setMsg(`Annulé : ${last.label} / ${last.player}`,'warn');
+  } else if(last.type==='panier_adv'){
+    panierAdvStats[last.ptype][last.val][last.qt]--;
+    scoreThem-=last.pts;updateScore();setMsg('Annulé : panier adverse','warn');
+  } else if(last.type==='score_adj'){
+    if(last.team==='us')scoreUs-=last.val;else scoreThem-=last.val;
+    scoreUs=Math.max(0,scoreUs);scoreThem=Math.max(0,scoreThem);
+    updateScore();setMsg('Correction score annulée','warn');
+  }
+  if(!history.length)document.getElementById('undo-btn').disabled=true;
+  saveState();resetFlow();if(currentSection==='recap')updateRecap();
+}
+
+function logTendance(key){
+  tendances[currentQt][key]++;
+  history.push({type:'tend',key,qt:currentQt});
+  document.getElementById('undo-btn').disabled=false;
+  setMsg(`✓ ${key} (${QT_LABELS[currentQt]})`,'ok');
+  saveState();if(currentSection==='recap')updateRecap();
+}
+
+function openPlayerModal(key,label,icon){
+  document.getElementById('modal-player-title').textContent=`${icon} ${label} — quelle joueuse ?`;
+  buildPlayerGrid('modal-players-grid',(name)=>{
+    stats[name].qt[currentQt][key]++;
+    history.push({type:'tend_player',player:name,key,label,qt:currentQt});
+    document.getElementById('undo-btn').disabled=false;
+    closeModal('modal-player');
+    setMsg(`✓ ${label} — ${name} (${QT_LABELS[currentQt]})`,'ok');
+    saveState();if(currentSection==='recap')updateRecap();
+  });
+  openModal('modal-player');
+}
+
+function openPanierAdverseModal(){
+  panierAdvCtx={type:null,val:null};
+  const tg=document.getElementById('panier-type-btns');tg.innerHTML='';
+  PANIER_TYPES.forEach(t=>{
+    const b=document.createElement('button');b.className='rbtn red';b.textContent=t;
+    b.onclick=()=>{
+      panierAdvCtx.type=t;
+      tg.querySelectorAll('.rbtn').forEach(x=>{x.style.opacity='0.5';x.style.fontWeight='500';});
+      b.style.opacity='1';b.style.fontWeight='700';checkPanierConfirm();
+    };tg.appendChild(b);
+  });
+  document.getElementById('panier-val-display').textContent='';
+  document.getElementById('panier-confirm-btn').disabled=true;
+  document.querySelectorAll('#panier-val-btns .rbtn').forEach(b=>{b.style.opacity='1';b.style.fontWeight='500';});
+  openModal('modal-panier-adv');
+}
+function setPanierVal(n){
+  panierAdvCtx.val=n;
+  document.querySelectorAll('#panier-val-btns .rbtn').forEach((b,i)=>{b.style.opacity='0.5';b.style.fontWeight='500';if((n===1&&i===0)||(n===2&&i===1)||(n===3&&i===2)){b.style.opacity='1';b.style.fontWeight='700';}});
+  document.getElementById('panier-val-display').textContent=`Valeur : ${n} pt${n>1?'s':''}`;
+  checkPanierConfirm();
+}
+function checkPanierConfirm(){document.getElementById('panier-confirm-btn').disabled=!(panierAdvCtx.type&&panierAdvCtx.val);}
+function confirmPanierAdv(){
+  const{type,val}=panierAdvCtx;
+  const valKey=val===1?'1pt':val===2?'2pts':'3pts';
+  if(!panierAdvStats[type])panierAdvStats[type]={'1pt':{},'2pts':{},'3pts':{}};
+  panierAdvStats[type][valKey][currentQt]=(panierAdvStats[type][valKey][currentQt]||0)+1;
+  scoreThem+=val;updateScore();
+  history.push({type:'panier_adv',ptype:type,val:valKey,pts:val,qt:currentQt});
+  document.getElementById('undo-btn').disabled=false;
+  closeModal('modal-panier-adv');
+  setMsg(`✓ Panier adverse ${type} — ${val} pt${val>1?'s':''}`,'ok');
+  saveState();if(currentSection==='recap')updateRecap();
+}
+
+function adjScoreUs(n){scoreUs=Math.max(0,scoreUs+n);updateScore();history.push({type:'score_adj',team:'us',val:n});document.getElementById('undo-btn').disabled=false;saveState();}
+function adjScoreThem(n){scoreThem=Math.max(0,scoreThem+n);updateScore();history.push({type:'score_adj',team:'them',val:n});document.getElementById('undo-btn').disabled=false;saveState();}
+function updateScore(){document.getElementById('score-us').textContent=scoreUs;document.getElementById('score-them').textContent=scoreThem;}
+
+function openModal(id){document.getElementById(id).classList.add('visible');}
+function closeModal(id){document.getElementById(id).classList.remove('visible');}
+
+function setMsg(txt,type){const m=document.getElementById('msg-bar');m.textContent=txt;m.className='msg-bar'+(type?' '+type:'');}
+function setSection(name,el){
+  currentSection=name;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('visible'));
+  document.getElementById('sec-'+name).classList.add('visible');
+  if(name==='recap')updateRecap();if(name==='settings')buildSettingsUI();
+}
+function setQt(n,el){
+  currentQt=n;document.querySelectorAll('.qt-tab').forEach(b=>b.classList.remove('active'));el.classList.add('active');
+  const lbl=document.getElementById('tend-qt-label');if(lbl)lbl.textContent=QT_LABELS[n];
+}
+function setRecapQt(q,el){recapQt=q;document.querySelectorAll('.qt-filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');updateRecap();}
+document.getElementById('section-tabs').addEventListener('click',function(e){
+  const btn=e.target.closest('.section-tab');if(!btn)return;
+  document.querySelectorAll('.section-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+});
+document.querySelectorAll('.modal').forEach(m=>{m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');});});
+
+function getStat(pname,key){
+  if(!stats[pname])return 0;
+  if(recapQt==='all'){let s=0;[1,2,3,4,5].forEach(q=>s+=((stats[pname].qt[q])||{})[key]||0);return s;}
+  return((stats[pname].qt[recapQt])||{})[key]||0;
+}
+function pct(m,t){return t>0?Math.round(m/t*100)+'%':'—';}
+function computeEff(d){
+  if(!d.total)return{score:0,pct:0};
+  const raw=d['Panier']*1+d['Faute provoquée']*0.75+d['Tir raté']*0.5+d['Perte de balle']*(-1);
+  return{score:raw,pct:Math.round((raw/d.total)*100)};
+}
+
+function updateRecap(){
+  const tbody=document.getElementById('recap-body');tbody.innerHTML='';
+  PLAYERS.forEach(p=>{
+    const n=p.name;
+    const lfm=getStat(n,'lfm'),lfr=getStat(n,'lfr'),t2m=getStat(n,'2m'),t2r=getStat(n,'2r'),t3m=getStat(n,'3m'),t3r=getStat(n,'3r');
+    const fp=getStat(n,'fp'),pdb=getStat(n,'pdb'),ro=getStat(n,'ro'),rd=getStat(n,'rd');
+    const it=getStat(n,'int'),pd=getStat(n,'pd'),fo=getStat(n,'fo'),fd=getStat(n,'fd'),ctr=getStat(n,'ctr'),ctrSubi=getStat(n,'ctrSubi');
+    const pts=lfm+t2m*2+t3m*3;
+    if(!(pts||ro||rd||pdb||it||pd||fo||fd||ctr||ctrSubi||lfm||lfr||t2m||t2r||t3m||t3r||fp))return;
+    const fmt=(m,t)=>`${m}/${m+t} <span class="pct">${pct(m,m+t)}</span>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-weight:600">${n}</td>
+      <td>${fmt(lfm,lfr)}</td><td>${fmt(t2m,t2r)}</td><td>${fmt(t3m,t3r)}</td>
+      <td><strong>${pts}</strong></td>
+      <td>${ro||'—'}</td><td>${rd||'—'}</td>
+      <td>${ctr>0?`<span class="badge b-blue">${ctr}</span>`:'—'}</td>
+      <td>${ctrSubi>0?`<span class="badge b-red">${ctrSubi}</span>`:'—'}</td>
+      <td>${it||'—'}</td><td>${pd||'—'}</td><td>${pdb||'—'}</td>
+      <td>${fo>0?`<span class="badge b-orange">${fo}</span>`:'—'}</td>
+      <td>${fd>0?`<span class="badge b-purple">${fd}</span>`:'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+  if(!tbody.children.length)tbody.innerHTML='<tr><td colspan="14" style="text-align:center;color:#aaa;padding:14px;">Aucune action saisie</td></tr>';
+
+  const sbody=document.getElementById('sys-recap-body');sbody.innerHTML='';
+  SYSTEMS.forEach(s=>{
+    const d=systemStats[s];if(!d||!d.total)return;
+    const{score,pct:ep}=computeEff(d);
+    const bc=ep>=60?'#34a853':ep>=30?'#f0a000':'#ea4335';
+    const sc=score>0?'#1e7e34':score<0?'#c0392b':'#555';
+    const sd=Number.isInteger(score)?score:score.toFixed(1);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-weight:600">${s}</td><td>${d.total}</td>
+      <td><span class="badge b-green">${d['Panier']}</span></td>
+      <td><span class="badge b-orange">${d['Faute provoquée']}</span></td>
+      <td><span class="badge b-red">${d['Perte de balle']}</span></td>
+      <td><span class="badge b-gray">${d['Tir raté']}</span></td>
+      <td><span class="badge b-gray">${d['Touche']}</span></td>
+      <td style="text-align:center;font-size:14px;font-weight:700;color:${sc}">${score>0?'+':''}${sd}</td>
+      <td style="min-width:90px;"><div style="font-size:11px;font-weight:600;color:${bc}">${ep}%</div>
+      <div class="eff-bar-wrap"><div class="eff-bar" style="width:${Math.max(0,Math.min(100,ep))}%;background:${bc}"></div></div></td>`;
+    sbody.appendChild(tr);
+  });
+  if(!sbody.children.length)sbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:#aaa;padding:14px;">Aucun système saisi</td></tr>';
+
+  const tbl=document.getElementById('tend-tbl');
+  let html=`<tr><th>Tendance</th>${[1,2,3,4,5].map(q=>`<th style="text-align:center">${QT_LABELS[q]}</th>`).join('')}<th style="text-align:center">Total</th></tr>`;
+  TEND_KEYS.forEach(k=>{
+    let total=0;const isDanger=k.includes('panier')||k.includes('CA');
+    const bg=isDanger?'#fef0ef':'';const tc=isDanger?'#c0392b':'#333';
+    let row=`<tr><td style="${bg?'background:'+bg+';':''}color:${tc};font-weight:600;">${k}</td>`;
+    [1,2,3,4,5].forEach(q=>{const v=(tendances[q]&&tendances[q][k])||0;total+=v;row+=`<td style="${bg?'background:'+bg+';':''}color:${tc};">${v||'—'}</td>`;});
+    row+=`<td style="${bg?'background:'+bg+';':''}color:${tc};font-weight:700;">${total}</td></tr>`;html+=row;
+  });
+  tbl.innerHTML=html;
+
+  const pabody=document.getElementById('panier-adv-body');pabody.innerHTML='';let hasAny=false;
+  PANIER_TYPES.forEach(t=>{
+    const d=panierAdvStats[t]||{'1pt':{},'2pts':{},'3pts':{}};
+    const t1=Object.values(d['1pt']||{}).reduce((a,b)=>a+b,0);
+    const t2=Object.values(d['2pts']||{}).reduce((a,b)=>a+b,0);
+    const t3=Object.values(d['3pts']||{}).reduce((a,b)=>a+b,0);
+    const total=t1+t2+t3;const pts=t1+t2*2+t3*3;
+    if(!total)return;hasAny=true;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-weight:600">${t}</td><td>${t1||'—'}</td><td>${t2||'—'}</td><td>${t3||'—'}</td><td><strong>${total}</strong></td><td style="color:#c0392b;font-weight:600">${pts} pts</td>`;
+    pabody.appendChild(tr);
+  });
+  if(!hasAny)pabody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:14px;">Aucun panier adverse saisi</td></tr>';
+}
+
+function resetMatch(){
+  if(!confirm('Effacer toutes les données du match en cours ?'))return;
+  stats=initStats();systemStats=initSys();tendances=initTend();panierAdvStats=initPanierAdv();
+  scoreUs=0;scoreThem=0;history=[];updateScore();
+  document.getElementById('undo-btn').disabled=true;
+  saveState();resetFlow();setMsg('Nouveau match — données effacées.','warn');updateRecap();
+}
+
+function buildSettingsUI(){
+  const pl=document.getElementById('settings-players');pl.innerHTML='';
+  PLAYERS.forEach(p=>{const row=document.createElement('div');row.className='settings-row';row.innerHTML=`<input class="settings-num" type="number" value="${p.num}" placeholder="#"><input class="settings-input" type="text" value="${p.name}" placeholder="Nom"><button class="del-btn" onclick="this.parentElement.remove()">✕</button>`;pl.appendChild(row);});
+  const sl=document.getElementById('settings-systems');sl.innerHTML='';
+  SYSTEMS.forEach(s=>{const row=document.createElement('div');row.className='settings-row';row.innerHTML=`<input class="settings-input" type="text" value="${s}" placeholder="Système"><button class="del-btn" onclick="this.parentElement.remove()">✕</button>`;sl.appendChild(row);});
+}
+function addPlayerRow(){const pl=document.getElementById('settings-players');const row=document.createElement('div');row.className='settings-row';row.innerHTML=`<input class="settings-num" type="number" placeholder="#"><input class="settings-input" type="text" placeholder="Nom"><button class="del-btn" onclick="this.parentElement.remove()">✕</button>`;pl.appendChild(row);row.querySelector('.settings-num').focus();}
+function addSystemRow(){const sl=document.getElementById('settings-systems');const row=document.createElement('div');row.className='settings-row';row.innerHTML=`<input class="settings-input" type="text" placeholder="Système"><button class="del-btn" onclick="this.parentElement.remove()">✕</button>`;sl.appendChild(row);row.querySelector('.settings-input').focus();}
+function saveSettings(){
+  const pRows=document.getElementById('settings-players').querySelectorAll('.settings-row');
+  const newP=[];pRows.forEach(r=>{const num=r.querySelector('input[type="number"]');const name=r.querySelector('input[type="text"]');if(name&&name.value.trim())newP.push({num:num&&num.value?parseInt(num.value):0,name:name.value.trim()});});
+  const sRows=document.getElementById('settings-systems').querySelectorAll('.settings-row');
+  const newS=[];sRows.forEach(r=>{const inp=r.querySelector('input');if(inp&&inp.value.trim())newS.push(inp.value.trim());});
+  if(!newP.length){alert('Ajoute au moins une joueuse.');return;}if(!newS.length){alert('Ajoute au moins un système.');return;}
+  PLAYERS=newP;SYSTEMS=newS;
+  stats=initStats();systemStats=initSys();tendances=initTend();panierAdvStats=initPanierAdv();
+  scoreUs=0;scoreThem=0;history=[];updateScore();document.getElementById('undo-btn').disabled=true;
+  buildPlayerGrid('players-grid',selectPlayer);buildPlayerGrid('passe-grid',selectPasse);buildSystems();
+  saveState();resetFlow();setMsg('✓ Configuration enregistrée.','ok');
+  document.querySelectorAll('.section-tab').forEach(b=>{b.classList.remove('active');if(b.textContent.trim()==='Action')b.classList.add('active');});
+  setSection('action',null);
+}
+
+function exportCSV(){
+  let csv='Joueuse,LF M,LF T,%,2pts M,2pts T,%,3pts M,3pts T,%,Pts,RO,RD,Ctres,Contrée,Int,PD,PdB,F.Off.,F.Déf.\n';
+  PLAYERS.forEach(p=>{
+    const n=p.name;const g=k=>{let s=0;[1,2,3,4,5].forEach(q=>s+=((stats[n]&&stats[n].qt[q])||{})[k]||0);return s;};
+    const lfm=g('lfm'),lfr=g('lfr'),t2m=g('2m'),t2r=g('2r'),t3m=g('3m'),t3r=g('3r');
+    const pts=lfm+t2m*2+t3m*3;
+    csv+=`${n},${lfm},${lfm+lfr},${pct(lfm,lfm+lfr)},${t2m},${t2m+t2r},${pct(t2m,t2m+t2r)},${t3m},${t3m+t3r},${pct(t3m,t3m+t3r)},${pts},${g('ro')},${g('rd')},${g('ctr')},${g('ctrSubi')},${g('int')},${g('pd')},${g('pdb')},${g('fo')},${g('fd')}\n`;
+  });
+  csv+='\nSystème,Total,Panier,Faute,PdB,Raté,Touche,Score pondéré,Efficacité%\n';
+  SYSTEMS.forEach(s=>{const d=systemStats[s];if(!d||!d.total)return;const{score,pct:ep}=computeEff(d);csv+=`${s},${d.total},${d['Panier']},${d['Faute provoquée']},${d['Perte de balle']},${d['Tir raté']},${d['Touche']},${Number.isInteger(score)?score:score.toFixed(2)},${ep}%\n`;});
+  csv+='\nTendance,QT1,QT2,QT3,QT4,Prol.,Total\n';
+  TEND_KEYS.forEach(k=>{let total=0,row=k;[1,2,3,4,5].forEach(q=>{const v=(tendances[q]&&tendances[q][k])||0;total+=v;row+=','+v;});csv+=row+','+total+'\n';});
+  csv+='\nPanier adverse,LF(1pt),2pts,3pts,Total,Pts encaissés\n';
+  PANIER_TYPES.forEach(t=>{
+    const d=panierAdvStats[t]||{'1pt':{},'2pts':{},'3pts':{}};
+    const t1=Object.values(d['1pt']||{}).reduce((a,b)=>a+b,0);
+    const t2=Object.values(d['2pts']||{}).reduce((a,b)=>a+b,0);
+    const t3=Object.values(d['3pts']||{}).reduce((a,b)=>a+b,0);
+    csv+=`${t},${t1},${t2},${t3},${t1+t2+t3},${t1+t2*2+t3*3}\n`;
+  });
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='stats_match.csv';a.click();
+}
+
+loadState();
+if(!Object.keys(stats).length)stats=initStats();
+if(!Object.keys(systemStats).length)systemStats=initSys();
+if(!Object.keys(tendances).length)tendances=initTend();
+if(!Object.keys(panierAdvStats).length)panierAdvStats=initPanierAdv();
+buildPlayerGrid('players-grid',selectPlayer);
+buildPlayerGrid('passe-grid',selectPasse);
+buildSystems();updateScore();
+if(history.length)document.getElementById('undo-btn').disabled=false;
+</script>
+</body>
+</html>
